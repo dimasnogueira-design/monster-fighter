@@ -262,14 +262,14 @@ document
    SCOOP CALCULATOR
 ========================================================= */
 
-const SCOOP_PRICE = 100;
-
-
 const scoopState = {
-  google: 6,
-  meta: 3,
-  remarketing: 1,
+  google: 8,
+  meta: 5,
+  remarketing: 2,
 };
+
+
+let selectedPlan = "performance";
 
 
 function formatMoney(value) {
@@ -301,26 +301,32 @@ function setText(id, value) {
 
 function updateCalculator() {
 
+  const quote =
+    MonsterPricing.getPlanQuote(
+      selectedPlan,
+      scoopState
+    );
+
+
   const google =
-    scoopState.google * SCOOP_PRICE;
+    scoopState.google
+    * MonsterPricing.SCOOP_PRICE;
 
 
   const meta =
-    scoopState.meta * SCOOP_PRICE;
+    scoopState.meta
+    * MonsterPricing.SCOOP_PRICE;
 
 
   const remarketing =
-    scoopState.remarketing * SCOOP_PRICE;
+    scoopState.remarketing
+    * MonsterPricing.SCOOP_PRICE;
 
 
   const scoops =
     scoopState.google
     + scoopState.meta
     + scoopState.remarketing;
-
-
-  const total =
-    scoops * SCOOP_PRICE;
 
 
   setText(
@@ -371,16 +377,149 @@ function updateCalculator() {
 
   setText(
     "mediaTotal",
-    `${formatMoney(total)}/mês`
+    `${formatMoney(quote.media)}/mês`
   );
 
 
   setText(
     "summaryMedia",
-    `${formatMoney(total)}/mês`
+    `${formatMoney(quote.media)}/mês`
+  );
+
+
+  setText(
+    "selectedPlanName",
+    quote.name.toUpperCase()
+  );
+
+
+  setText(
+    "setupValue",
+    `${quote.setupPrefix}${formatMoney(quote.setup)}`
+  );
+
+
+  setText(
+    "managementValue",
+    quote.management === null
+      ? "Não obrigatória"
+      : `${formatMoney(quote.management)}/mês`
+  );
+
+
+  setText(
+    "hostingValue",
+    `${formatMoney(quote.hosting)}/ano`
+  );
+
+
+  setText(
+    "entryValue",
+    formatMoney(quote.entry)
+  );
+
+
+  setText(
+    "initialPaymentValue",
+    formatMoney(quote.initialPayment)
+  );
+
+
+  setText(
+    "paymentDescription",
+    `50% do setup + hospedagem anual para iniciar. `
+    + `Saldo de ${formatMoney(quote.remaining)} após aprovação `
+    + `e antes da publicação. A mídia é paga diretamente às plataformas.`
   );
 
 }
+
+
+function selectPlan(planId) {
+
+  const quote =
+    MonsterPricing.getPlanQuote(planId);
+
+
+  selectedPlan = planId;
+
+
+  Object.assign(
+    scoopState,
+    quote.scoops
+  );
+
+
+  document
+    .querySelectorAll("[data-plan-card]")
+    .forEach((card) => {
+      card.classList.toggle(
+        "is-selected",
+        card.dataset.planCard === planId
+      );
+    });
+
+
+  document
+    .querySelectorAll(".plan-select")
+    .forEach((button) => {
+      const isSelected =
+        button.dataset.plan === planId;
+
+      button.setAttribute(
+        "aria-pressed",
+        String(isSelected)
+      );
+
+      const buttonPlan =
+        MonsterPricing.plans[
+          button.dataset.plan
+        ];
+
+      button.textContent = isSelected
+        ? `${quote.name.toUpperCase()} SELECIONADO`
+        : `SELECIONAR ${
+            buttonPlan.name.toUpperCase()
+          }`;
+    });
+
+
+  document
+    .querySelectorAll("[data-plan-detail]")
+    .forEach((panel) => {
+      const isActive =
+        panel.dataset.planDetail === planId;
+
+      panel.hidden = !isActive;
+      panel.classList.toggle(
+        "is-active",
+        isActive
+      );
+    });
+
+
+  updateCalculator();
+
+}
+
+
+document
+  .querySelectorAll(".plan-select")
+  .forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        selectPlan(button.dataset.plan);
+
+        document
+          .querySelector(".calculator-section")
+          ?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+      }
+    );
+  });
 
 
 document
@@ -442,7 +581,7 @@ document
   });
 
 
-updateCalculator();
+selectPlan("performance");
 
 
 /* =========================================================
